@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background: #0f172a;
+    color: #f8fafc;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  .h-dvh { height: 100vh; height: 100dvh; }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+}
+
+@layer utilities {
+  .leaflet-pane, .leaflet-control, .leaflet-top, .leaflet-bottom { z-index: 400 !important; }
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
