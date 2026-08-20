@@ -4,6 +4,7 @@ import {
   fetchSelf, syncCheckins, loadCachedCheckins, captureTokenFromRedirect,
 } from '@/services/swarmService'
 import { hasClientId } from '@/services/config'
+import { importCheckinsFromFile } from '@/services/swarmImport'
 import type { SwarmCheckin, SwarmAuthState } from '@/types'
 
 export function useSwarm() {
@@ -16,6 +17,8 @@ export function useSwarm() {
   const [syncProgress, setSyncProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [configured, setConfigured] = useState(hasClientId())
+  const [importing, setImporting] = useState(false)
+  const [importNotice, setImportNotice] = useState<string | null>(null)
 
   useEffect(() => { loadCachedCheckins().then(setCheckins) }, [])
 
@@ -63,9 +66,27 @@ export function useSwarm() {
 
   const refreshConfigured = useCallback(() => setConfigured(hasClientId()), [])
 
+  /** Import check-ins from a Foursquare data export file. */
+  const importFile = useCallback(async (file: File) => {
+    setImporting(true); setError(null); setImportNotice(null)
+    try {
+      const { checkins: imported, skipped } = await importCheckinsFromFile(file)
+      setCheckins(imported)
+      setImportNotice(
+        `Imported ${imported.length.toLocaleString()} check-ins` +
+        (skipped > 0 ? ` · ${skipped.toLocaleString()} entries skipped (no coordinates or date)` : '')
+      )
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setImporting(false)
+    }
+  }, [])
+
   return {
     auth, checkins, isConnected: !!auth.accessToken,
     syncing, syncProgress, error, configured,
-    connect, disconnect, sync, refreshConfigured,
+    importing, importNotice,
+    connect, disconnect, sync, refreshConfigured, importFile,
   }
 }

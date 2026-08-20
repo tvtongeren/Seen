@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Loader2, Link2, Link2Off, RefreshCw, Star, User, Copy, Check, ExternalLink, KeyRound } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Loader2, Link2, Link2Off, RefreshCw, Star, User, Copy, Check, ExternalLink, KeyRound, Upload, Info } from 'lucide-react'
 import type { SwarmCheckin } from '@/types'
 import { getClientId, setClientId, getPlacesApiKey, setPlacesApiKey, getRedirectUri } from '@/services/config'
 import { format } from 'date-fns'
@@ -12,10 +12,13 @@ interface Props {
   syncProgress: number
   error: string | null
   configured: boolean
+  importing: boolean
+  importNotice: string | null
   onConnect: () => void
   onDisconnect: () => void
   onSync: () => void
   onConfigured: () => void
+  onImportFile: (file: File) => void
 }
 
 function CopyField({ value }: { value: string }) {
@@ -126,11 +129,79 @@ function SetupPanel({ onConfigured }: { onConfigured: () => void }) {
   )
 }
 
+function ImportPanel({ importing, onImportFile }: { importing: boolean; onImportFile: (f: File) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <div className="bg-slate-800 rounded-2xl border border-brand-700/50 overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-700 flex items-center gap-2">
+        <Upload size={15} className="text-brand-400" />
+        <span className="text-sm font-semibold">Import your Swarm history</span>
+        <span className="ml-auto text-[10px] bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded-full font-medium">
+          Recommended
+        </span>
+      </div>
+
+      <div className="px-4 py-4 space-y-4">
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Foursquare will email you your complete check-in history as a file. This needs
+          no developer app and no approval — and it gives you everything, not just what
+          the API would return.
+        </p>
+
+        <ol className="space-y-2.5 text-xs text-slate-300">
+          <li className="flex gap-2">
+            <span className="text-brand-400 font-bold flex-shrink-0">1.</span>
+            <span>
+              Open{' '}
+              <a href="https://foursquare.com/settings/privacy" target="_blank" rel="noopener noreferrer"
+                 className="text-brand-400 underline inline-flex items-center gap-1">
+                foursquare.com/settings/privacy <ExternalLink size={10} />
+              </a>{' '}
+              and request a download of your data.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-brand-400 font-bold flex-shrink-0">2.</span>
+            <span>Wait for their email (usually a few hours) and unzip the file they send.</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-brand-400 font-bold flex-shrink-0">3.</span>
+            <span>Load the file with <strong>checkins</strong> in its name below.</span>
+          </li>
+        </ol>
+
+        <input
+          ref={inputRef} type="file" accept=".json,application/json" className="hidden"
+          onChange={e => {
+            const file = e.target.files?.[0]
+            if (file) onImportFile(file)
+            e.target.value = ''
+          }}
+        />
+        <button
+          onClick={() => inputRef.current?.click()} disabled={importing}
+          className="w-full flex items-center justify-center gap-2 bg-brand-500 text-white py-3 rounded-xl text-sm font-semibold hover:bg-brand-600 disabled:opacity-60 transition-colors"
+        >
+          {importing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+          {importing ? 'Importing…' : 'Choose export file'}
+        </button>
+
+        <p className="text-[11px] text-slate-600 leading-relaxed">
+          Parsed entirely in your browser. The file never leaves your device.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function SwarmPage({
   isConnected, user, checkins, syncing, syncProgress, error,
-  configured, onConnect, onDisconnect, onSync, onConfigured,
+  configured, importing, importNotice,
+  onConnect, onDisconnect, onSync, onConfigured, onImportFile,
 }: Props) {
   const [showSetup, setShowSetup] = useState(false)
+  const [showApi, setShowApi] = useState(false)
   const sorted = [...checkins].reverse()
 
   return (
@@ -140,56 +211,86 @@ export default function SwarmPage({
         <p className="text-slate-400 text-sm mt-1">Import your check-in history into Seen.</p>
       </div>
 
+      {/* Import is the primary path — it works without Foursquare's approval. */}
       <div className="px-5">
-        {!configured ? (
-          <SetupPanel onConfigured={onConfigured} />
-        ) : (
-          <div className={`rounded-2xl p-5 border ${isConnected ? 'border-emerald-700 bg-emerald-950/40' : 'border-slate-700 bg-slate-800'}`}>
-            {isConnected && user ? (
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {user.photo
-                    ? <img src={user.photo} alt="" className="w-full h-full object-cover" />
-                    : <User size={24} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{user.firstName} {user.lastName}</div>
-                  <div className="text-sm text-emerald-400">Connected to Swarm</div>
-                </div>
-                <button onClick={onDisconnect} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 transition-colors flex-shrink-0">
-                  <Link2Off size={14} />Disconnect
-                </button>
-              </div>
+        <ImportPanel importing={importing} onImportFile={onImportFile} />
+      </div>
+
+      {importNotice && (
+        <div className="px-5 mt-3">
+          <div className="bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-sm rounded-xl px-4 py-3">
+            {importNotice}
+          </div>
+        </div>
+      )}
+
+      {/* Live API is secondary: Foursquare often declines new apps access. */}
+      <div className="px-5 mt-4">
+        <button onClick={() => setShowApi(v => !v)}
+          className="w-full flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors py-2">
+          <Info size={13} />
+          <span>{showApi ? 'Hide' : 'Or connect the live API'}</span>
+        </button>
+
+        {showApi && (
+          <div className="space-y-3 mt-1">
+            <div className="bg-amber-950/40 border border-amber-800/60 rounded-xl px-4 py-3">
+              <p className="text-xs text-amber-200/90 leading-relaxed">
+                Swarm sign-in goes through <strong>foursquare.com</strong> — same company, one
+                login, so that redirect is expected. Be aware Foursquare restricts the personal
+                check-in endpoints, and new developer apps are often not approved for them. If
+                connecting fails, use the import above instead.
+              </p>
+            </div>
+            {!configured ? (
+              <SetupPanel onConfigured={onConfigured} />
             ) : (
-              <div className="text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-orange-500 mx-auto flex items-center justify-center">
-                  <Star size={28} className="text-white" />
+              <>
+                <div className={`rounded-2xl p-5 border ${isConnected ? 'border-emerald-700 bg-emerald-950/40' : 'border-slate-700 bg-slate-800'}`}>
+                  {isConnected && user ? (
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {user.photo
+                          ? <img src={user.photo} alt="" className="w-full h-full object-cover" />
+                          : <User size={24} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold truncate">{user.firstName} {user.lastName}</div>
+                        <div className="text-sm text-emerald-400">Connected to Swarm</div>
+                      </div>
+                      <button onClick={onDisconnect} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 transition-colors flex-shrink-0">
+                        <Link2Off size={14} />Disconnect
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center space-y-4">
+                      <div className="w-16 h-16 rounded-full bg-orange-500 mx-auto flex items-center justify-center">
+                        <Star size={28} className="text-white" />
+                      </div>
+                      <div>
+                        <div className="font-semibold">Ready to connect</div>
+                        <div className="text-sm text-slate-400 mt-1">
+                          You'll be sent to Foursquare to approve access, then straight back here.
+                        </div>
+                      </div>
+                      <button onClick={onConnect}
+                        className="flex items-center gap-2 mx-auto bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-orange-600 transition-colors">
+                        <Link2 size={16} />Connect with Swarm
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <div className="font-semibold">Ready to connect</div>
-                  <div className="text-sm text-slate-400 mt-1">
-                    You'll be sent to Foursquare to approve access, then straight back here.
-                  </div>
-                </div>
-                <button onClick={onConnect}
-                  className="flex items-center gap-2 mx-auto bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-orange-600 transition-colors">
-                  <Link2 size={16} />Connect with Swarm
+
+                <button onClick={() => setShowSetup(v => !v)}
+                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                  {showSetup ? 'Hide credentials' : 'Edit credentials'}
                 </button>
-              </div>
+                {showSetup && <SetupPanel onConfigured={onConfigured} />}
+              </>
             )}
           </div>
         )}
       </div>
-
-      {configured && (
-        <div className="px-5 mt-3">
-          <button onClick={() => setShowSetup(v => !v)}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-            {showSetup ? 'Hide credentials' : 'Edit credentials'}
-          </button>
-          {showSetup && <div className="mt-3"><SetupPanel onConfigured={onConfigured} /></div>}
-        </div>
-      )}
 
       {isConnected && (
         <div className="px-5 mt-4">

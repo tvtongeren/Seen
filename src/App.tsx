@@ -63,9 +63,10 @@ export default function App() {
       <SwarmPage
         isConnected={swarm.isConnected} user={swarm.auth.user} checkins={swarm.checkins}
         syncing={swarm.syncing} syncProgress={swarm.syncProgress} error={swarm.error}
-        configured={swarm.configured} onConnect={swarm.connect}
+        configured={swarm.configured} importing={swarm.importing}
+        importNotice={swarm.importNotice} onConnect={swarm.connect}
         onDisconnect={swarm.disconnect} onSync={swarm.sync}
-        onConfigured={swarm.refreshConfigured}
+        onConfigured={swarm.refreshConfigured} onImportFile={swarm.importFile}
       />
     ),
     settings: <SettingsPage settings={settings} pointCount={pointCount} onSettingsChange={handleSettingsChange} />,
