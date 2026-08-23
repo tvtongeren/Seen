@@ -66,9 +66,7 @@ export default function SettingsPage({ settings, pointCount, onSettingsChange, s
 
   return (
     <div className="flex flex-col h-full bg-slate-900 text-white overflow-y-auto">
-      <div className="px-5 pt-6 pb-4"><h1 className="text-2xl font-bold">Settings</h1></div>
-
-      <div className="px-5">
+      <div className="px-5 pt-5">
         <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-1">Tracking</div>
         <div className="bg-slate-800 rounded-2xl divide-y divide-slate-700/60 overflow-hidden">
           <Row icon={MapPin} label="Background tracking" description="Record your position automatically while the app is open.">

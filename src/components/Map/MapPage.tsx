@@ -4,7 +4,7 @@
  * any place, and tracking controls at the bottom.
  */
 import { useState, useEffect, useCallback } from 'react'
-import { Search, X, Loader2, Navigation, Pause, Play } from 'lucide-react'
+import { Search, X, Loader2, Navigation, Pause, Play, Settings as SettingsIcon } from 'lucide-react'
 import TrackingMap from './TrackingMap'
 import { searchPlacesFree, type SearchPlace } from '@/services/geocodeService'
 import { checkProximityAgainstSpots } from '@/services/spotService'
@@ -20,13 +20,14 @@ interface Props {
   onStartTracking: () => void
   onStopTracking: () => void
   onSnapPosition: () => void
+  onOpenSettings: () => void
 }
 
 const FALLBACK_CENTER: Coordinates = { lat: 52.374, lng: 4.89 } // used only if GPS has never fixed
 
 export default function MapPage({
   spots, currentPosition, checkins, tracking,
-  onStartTracking, onStopTracking, onSnapPosition,
+  onStartTracking, onStopTracking, onSnapPosition, onOpenSettings,
 }: Props) {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<SearchPlace[]>([])
@@ -98,6 +99,14 @@ export default function MapPage({
 
       {/* Google Maps-style search bar, top of screen */}
       <div className="absolute top-4 left-4 right-4 z-[1000] flex items-start gap-2">
+        <button
+          onClick={onOpenSettings}
+          className="bg-slate-900/95 backdrop-blur rounded-2xl p-3 text-slate-300 hover:text-white transition-colors flex-shrink-0 shadow-xl"
+          aria-label="Open settings"
+        >
+          <SettingsIcon size={20} />
+        </button>
+
         <div className="flex-1 bg-slate-900/95 backdrop-blur rounded-2xl shadow-xl overflow-hidden min-w-0">
           <div className="flex items-center gap-2 px-4 py-3">
             <Search size={18} className="text-slate-400 flex-shrink-0" />

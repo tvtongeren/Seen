@@ -2,11 +2,9 @@ import { useState, useEffect } from 'react'
 import { useLocationTracking } from './hooks/useLocationTracking'
 import { useSwarm } from './hooks/useSwarm'
 import { getSettings, saveSettings } from './services/db'
-import BottomNav from './components/Navigation/BottomNav'
 import MapPage from './components/Map/MapPage'
-import HistoryPage from './components/History/HistoryPage'
-import SettingsPage from './components/Settings/SettingsPage'
-import type { Tab, AppSettings } from './types'
+import SettingsOverlay from './components/Settings/SettingsOverlay'
+import type { AppSettings } from './types'
 
 const DEFAULT_SETTINGS: AppSettings = {
   trackingEnabled: false,
@@ -17,21 +15,21 @@ const DEFAULT_SETTINGS: AppSettings = {
 }
 
 /**
- * Detect an OAuth redirect synchronously during the first render, before
- * useSwarm's effect scrubs the token out of the URL — so we can land the
- * user back on Settings, where the Swarm section now lives.
+ * Open Settings automatically on an OAuth redirect back from Foursquare —
+ * the map has no other screen to land the user on, and this is where the
+ * Swarm section that triggered the redirect lives.
  */
-function initialTab(): Tab {
+function cameFromOAuthRedirect(): boolean {
   const hash = window.location.hash
-  return hash.includes('access_token') || hash.includes('error') ? 'settings' : 'map'
+  return hash.includes('access_token') || hash.includes('error')
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>(initialTab)
+  const [settingsOpen, setSettingsOpen] = useState(cameFromOAuthRedirect)
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
 
   const {
-    currentPosition, history, spots, pointCount, tracking,
+    currentPosition, spots, pointCount, tracking,
     start: startTracking, stop: stopTracking, snapCurrentPosition,
   } = useLocationTracking()
 
@@ -46,40 +44,29 @@ export default function App() {
     if (!s.trackingEnabled && tracking) stopTracking()
   }
 
-  const pages: Record<Tab, React.ReactNode> = {
-    map: (
+  return (
+    <div className="relative w-full h-dvh bg-slate-900 overflow-hidden font-sans">
       <MapPage
         spots={spots} currentPosition={currentPosition} checkins={swarm.checkins}
         tracking={tracking}
         onStartTracking={() => startTracking(settings.trackingIntervalSeconds)}
         onStopTracking={stopTracking} onSnapPosition={snapCurrentPosition}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
-    ),
-    history: <HistoryPage history={history} checkins={swarm.checkins} adsEnabled={settings.adsEnabled} />,
-    settings: (
-      <SettingsPage
-        settings={settings} pointCount={pointCount} onSettingsChange={handleSettingsChange}
-        swarm={{
-          isConnected: swarm.isConnected, user: swarm.auth.user, checkins: swarm.checkins,
-          syncing: swarm.syncing, syncProgress: swarm.syncProgress, error: swarm.error,
-          configured: swarm.configured, importing: swarm.importing, importNotice: swarm.importNotice,
-          onConnect: swarm.connect, onDisconnect: swarm.disconnect, onSync: swarm.sync,
-          onConfigured: swarm.refreshConfigured, onImportFile: swarm.importFile,
-        }}
-      />
-    ),
-  }
 
-  return (
-    <div className="flex flex-col w-full h-dvh bg-slate-900 overflow-hidden font-sans">
-      <main className="flex-1 min-h-0 relative">
-        {(Object.keys(pages) as Tab[]).map(tab => (
-          <div key={tab} className={`absolute inset-0 ${activeTab === tab ? 'block' : 'hidden'}`}>
-            {pages[tab]}
-          </div>
-        ))}
-      </main>
-      <BottomNav active={activeTab} onNavigate={setActiveTab} />
+      {settingsOpen && (
+        <SettingsOverlay
+          settings={settings} pointCount={pointCount} onSettingsChange={handleSettingsChange}
+          swarm={{
+            isConnected: swarm.isConnected, user: swarm.auth.user, checkins: swarm.checkins,
+            syncing: swarm.syncing, syncProgress: swarm.syncProgress, error: swarm.error,
+            configured: swarm.configured, importing: swarm.importing, importNotice: swarm.importNotice,
+            onConnect: swarm.connect, onDisconnect: swarm.disconnect, onSync: swarm.sync,
+            onConfigured: swarm.refreshConfigured, onImportFile: swarm.importFile,
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
     </div>
   )
 }
