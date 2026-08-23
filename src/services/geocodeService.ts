@@ -1,10 +1,13 @@
 /**
- * Free place search via OpenStreetMap's Nominatim geocoder.
+ * Free place search via Photon (komoot's public geocoder, built on
+ * OpenStreetMap data).
  *
- * The Check tab previously required a Foursquare Places API key that almost
- * no one had configured — search silently returned zero results with no
- * explanation, which just looked broken. Nominatim needs no key, no signup,
- * and no CORS workaround, so search works immediately for everyone.
+ * Previously used Nominatim's demo server, which — unlike Photon — isn't
+ * reliably CORS-enabled or friendly to direct browser calls from arbitrary
+ * static sites; it's meant for light server-side use and can silently block
+ * or drop cross-origin requests. Photon is explicitly designed to be
+ * embedded in client apps (it's what komoot's own apps use), needs no key,
+ * and works directly from the browser.
  */
 export interface SearchPlace {
   id: string
@@ -16,6 +19,11 @@ export interface SearchPlace {
 
 export class SearchError extends Error {}
 
+interface PhotonFeature {
+  geometry?: { coordinates?: unknown }
+  properties?: Record<string, unknown>
+}
+
 export async function searchPlacesFree(
   query: string,
   near: { lat: number; lng: number }
@@ -23,22 +31,16 @@ export async function searchPlacesFree(
   const trimmed = query.trim()
   if (!trimmed) return []
 
-  // Bias results toward the user's area without excluding matches elsewhere.
-  const delta = 0.35
   const params = new URLSearchParams({
-    format: 'jsonv2',
     q: trimmed,
+    lat: String(near.lat),
+    lon: String(near.lng),
     limit: '8',
-    addressdetails: '0',
-    viewbox: `${near.lng - delta},${near.lat + delta},${near.lng + delta},${near.lat - delta}`,
-    bounded: '0',
   })
 
   let res: Response
   try {
-    res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
-      headers: { Accept: 'application/json' },
-    })
+    res = await fetch(`https://photon.komoot.io/api/?${params}`)
   } catch {
     throw new SearchError('Could not reach the place search service — check your connection.')
   }
@@ -53,23 +55,35 @@ export async function searchPlacesFree(
   } catch {
     throw new SearchError('Place search returned an unreadable response.')
   }
-  if (!Array.isArray(data)) {
+
+  const features = (data as { features?: unknown })?.features
+  if (!Array.isArray(features)) {
     throw new SearchError('Place search returned an unexpected response.')
   }
 
-  return data
+  return features
     .map((raw): SearchPlace | null => {
-      const r = raw as Record<string, unknown>
-      const lat = parseFloat(String(r.lat))
-      const lng = parseFloat(String(r.lon))
-      const displayName = typeof r.display_name === 'string' ? r.display_name : null
-      if (!displayName || !Number.isFinite(lat) || !Number.isFinite(lng)) return null
+      const f = raw as PhotonFeature
+      const coords = f.geometry?.coordinates
+      if (!Array.isArray(coords) || coords.length < 2) return null
+
+      // GeoJSON order is [lon, lat], not [lat, lon].
+      const lng = Number(coords[0])
+      const lat = Number(coords[1])
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+
+      const props = f.properties ?? {}
+      const name = (props.name as string) || (props.street as string) || 'Unnamed place'
+      const address = [props.street, props.housenumber, props.city, props.state, props.country]
+        .filter(Boolean)
+        .join(', ') || name
+      const category = String(props.osm_value ?? props.osm_key ?? 'place').replace(/_/g, ' ')
 
       return {
-        id: String(r.place_id ?? `${lat},${lng}`),
-        name: displayName.split(',')[0],
-        address: displayName,
-        category: typeof r.type === 'string' ? r.type.replace(/_/g, ' ') : String(r.class ?? 'Place'),
+        id: String(props.osm_id ?? `${lat},${lng}`),
+        name,
+        address,
+        category,
         coords: { lat, lng },
       }
     })

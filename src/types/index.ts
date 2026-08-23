@@ -75,7 +75,7 @@ export interface GeoAd {
   distanceHint?: string
 }
 
-export type Tab = 'map' | 'history' | 'check' | 'swarm' | 'settings'
+export type Tab = 'map' | 'history' | 'swarm' | 'settings'
 
 export interface AppSettings {
   trackingEnabled: boolean

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { MapContainer, TileLayer, Circle, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
-import type { LocationPoint, SwarmCheckin, Spot } from '@/types'
+import type { Coordinates, LocationPoint, SwarmCheckin, Spot } from '@/types'
 import { SPOT_RADIUS_METRES } from '@/services/spotService'
 import SpotPopup from './SpotPopup'
 import 'leaflet/dist/leaflet.css'
@@ -20,12 +20,20 @@ const swarmIcon = L.divIcon({
   iconAnchor: [13, 26],
 })
 
+const targetIcon = L.divIcon({
+  className: '',
+  html: `<div style="width:30px;height:30px;background:#f43f5e;border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg) translate(-1px,-1px);box-shadow:0 3px 8px rgba(0,0,0,.5)"></div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+})
+
 function ClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => void }) {
   useMapEvents({ click: e => onClick?.(e.latlng.lat, e.latlng.lng) })
   return null
 }
 
-function RecenterControl({ position }: { position: { lat: number; lng: number } }) {
+/** Keeps the map centred on the user while tracking — suppressed while a search target is active. */
+function RecenterControl({ position }: { position: Coordinates }) {
   const map = useMap()
   useEffect(() => {
     map.setView([position.lat, position.lng], map.getZoom(), { animate: true })
@@ -33,14 +41,25 @@ function RecenterControl({ position }: { position: { lat: number; lng: number } 
   return null
 }
 
+/** Pans/zooms to a searched or tapped location, the way Google Maps flies to a search result. */
+function FlyToTarget({ target }: { target: Coordinates | null }) {
+  const map = useMap()
+  useEffect(() => {
+    if (target) map.flyTo([target.lat, target.lng], Math.max(map.getZoom(), 16), { duration: 0.8 })
+  }, [map, target?.lat, target?.lng])
+  return null
+}
+
 interface Props {
   spots: Spot[]
   currentPosition: LocationPoint | null
   checkins: SwarmCheckin[]
+  /** A searched or tapped place — shows a pin and stops auto-following the live position. */
+  target?: Coordinates | null
   onMapClick?: (lat: number, lng: number) => void
 }
 
-export default function TrackingMap({ spots, currentPosition, checkins, onMapClick }: Props) {
+export default function TrackingMap({ spots, currentPosition, checkins, target = null, onMapClick }: Props) {
   const defaultCenter: [number, number] = currentPosition
     ? [currentPosition.coords.lat, currentPosition.coords.lng]
     : [52.374, 4.89]
@@ -78,9 +97,11 @@ export default function TrackingMap({ spots, currentPosition, checkins, onMapCli
             radius={Math.max(currentPosition.accuracy, 3)}
             pathOptions={{ color: '#38bdf8', fillColor: '#0ea5e9', fillOpacity: 0.9, weight: 2 }}
           />
-          <RecenterControl position={currentPosition.coords} />
+          {!target && <RecenterControl position={currentPosition.coords} />}
         </>
       )}
+      {target && <Marker position={[target.lat, target.lng]} icon={targetIcon} />}
+      <FlyToTarget target={target} />
     </MapContainer>
   )
 }

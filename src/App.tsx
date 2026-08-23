@@ -5,7 +5,6 @@ import { getSettings, saveSettings } from './services/db'
 import BottomNav from './components/Navigation/BottomNav'
 import MapPage from './components/Map/MapPage'
 import HistoryPage from './components/History/HistoryPage'
-import ProximityCheckPage from './components/ProximityCheck/ProximityCheckPage'
 import SwarmPage from './components/Swarm/SwarmPage'
 import SettingsPage from './components/Settings/SettingsPage'
 import type { Tab, AppSettings } from './types'
@@ -58,7 +57,6 @@ export default function App() {
       />
     ),
     history: <HistoryPage history={history} checkins={swarm.checkins} adsEnabled={settings.adsEnabled} />,
-    check: <ProximityCheckPage currentPosition={currentPosition} spots={spots} />,
     swarm: (
       <SwarmPage
         isConnected={swarm.isConnected} user={swarm.auth.user} checkins={swarm.checkins}
