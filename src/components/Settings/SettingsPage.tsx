@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Shield, Trash2, Bell, MapPin, BarChart3 } from 'lucide-react'
+import { Shield, Trash2, Bell, MapPin } from 'lucide-react'
 import type { AppSettings, SwarmCheckin } from '@/types'
 import { saveSettings, clearLocations } from '@/services/db'
 import SwarmSection from './SwarmSection'
@@ -84,15 +84,6 @@ export default function SettingsPage({ settings, pointCount, onSettingsChange, s
       <SwarmSection {...swarm} />
 
       <div className="px-5 mt-5">
-        <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-1">Ads</div>
-        <div className="bg-slate-800 rounded-2xl overflow-hidden">
-          <Row icon={BarChart3} label="Personalised ads" description="Ads matched to your location category — coarse area only, never precise coordinates.">
-            <Toggle checked={settings.adsEnabled} onChange={v => update({ adsEnabled: v })} />
-          </Row>
-        </div>
-      </div>
-
-      <div className="px-5 mt-5">
         <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-1">Privacy & Data</div>
         <div className="bg-slate-800 rounded-2xl divide-y divide-slate-700/60 overflow-hidden">
           <Row icon={Shield} label="Data stays on device" description="All location history is stored locally in your browser's IndexedDB.">
@@ -110,7 +101,7 @@ export default function SettingsPage({ settings, pointCount, onSettingsChange, s
         <div className="bg-slate-800/50 rounded-2xl px-4 py-4 text-center">
           <div className="text-brand-400 font-bold text-lg">Seen</div>
           <div className="text-xs text-slate-500 mt-1">v0.1.0</div>
-          <div className="text-xs text-slate-600 mt-2">Location data is stored locally. Ads are served based on coarse location context only. Your precise coordinates are never shared.</div>
+          <div className="text-xs text-slate-600 mt-2">Location data is stored locally.</div>
         </div>
       </div>
     </div>

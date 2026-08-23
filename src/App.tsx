@@ -10,7 +10,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   trackingEnabled: false,
   trackingIntervalSeconds: 30,
   swarmSync: false,
-  adsEnabled: true,
   visitRadiusMetres: 100,
 }
 

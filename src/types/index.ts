@@ -64,21 +64,9 @@ export interface SwarmAuthState {
   user: { id: string; firstName: string; lastName: string; photo?: string } | null
 }
 
-export interface GeoAd {
-  id: string
-  title: string
-  description: string
-  ctaLabel: string
-  ctaUrl: string
-  category: 'food' | 'retail' | 'travel' | 'entertainment' | 'generic'
-  advertiser: string
-  distanceHint?: string
-}
-
 export interface AppSettings {
   trackingEnabled: boolean
   trackingIntervalSeconds: number
   swarmSync: boolean
-  adsEnabled: boolean
   visitRadiusMetres: number
 }
