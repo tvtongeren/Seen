@@ -24,6 +24,22 @@ export interface Place {
   source: 'swarm' | 'foursquare' | 'manual' | 'detected'
 }
 
+/**
+ * A persistent "you've been here" marker — one per ~10m radius, deduplicated
+ * across every tracked point that ever fell within it. Deliberately lightweight:
+ * a place visited a thousand times (home, gym) costs the same handful of numbers
+ * as one visited once, because only a bounded sample of visit dates is kept.
+ */
+export interface Spot {
+  id: string
+  coords: Coordinates
+  visitCount: number
+  firstSeen: number
+  lastSeen: number
+  /** Calendar-day timestamps, capped at MAX_SAMPLE_DATES — a sample, not a full log. */
+  sampleDates: number[]
+}
+
 export interface ProximityResult {
   place: Place | { name: string; coords: Coordinates }
   closestPoint: LocationPoint | null

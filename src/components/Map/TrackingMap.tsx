@@ -1,7 +1,9 @@
 import { useEffect } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Circle, Marker, Popup, useMap, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
-import type { LocationPoint, SwarmCheckin } from '@/types'
+import type { LocationPoint, SwarmCheckin, Spot } from '@/types'
+import { SPOT_RADIUS_METRES } from '@/services/spotService'
+import { format } from 'date-fns'
 import 'leaflet/dist/leaflet.css'
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
@@ -31,14 +33,42 @@ function RecenterControl({ position }: { position: { lat: number; lng: number } 
   return null
 }
 
+/**
+ * Spots visited more than 10 times (home, gym, …) show a summary rather than
+ * every date — the underlying record stays light (a sample, not a full log),
+ * and the popup mirrors that rather than pretending to list something it
+ * doesn't have.
+ */
+function SpotPopup({ spot }: { spot: Spot }) {
+  const showFullList = spot.visitCount <= 10
+  return (
+    <div className="text-sm min-w-[140px]">
+      <div className="font-semibold mb-1.5">
+        {spot.visitCount} visit{spot.visitCount !== 1 ? 's' : ''}
+      </div>
+      {showFullList ? (
+        <ul className="text-xs text-gray-600 space-y-0.5">
+          {spot.sampleDates.map(d => <li key={d}>{format(d, 'd MMM yyyy')}</li>)}
+        </ul>
+      ) : (
+        <div className="text-xs text-gray-600 space-y-0.5">
+          <div>First seen {format(spot.firstSeen, 'd MMM yyyy')}</div>
+          <div>Last seen {format(spot.lastSeen, 'd MMM yyyy')}</div>
+          <div className="text-gray-400 mt-1 italic">Frequent spot — summary only</div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 interface Props {
-  history: LocationPoint[]
+  spots: Spot[]
   currentPosition: LocationPoint | null
   checkins: SwarmCheckin[]
   onMapClick?: (lat: number, lng: number) => void
 }
 
-export default function TrackingMap({ history, currentPosition, checkins, onMapClick }: Props) {
+export default function TrackingMap({ spots, currentPosition, checkins, onMapClick }: Props) {
   const defaultCenter: [number, number] = currentPosition
     ? [currentPosition.coords.lat, currentPosition.coords.lng]
     : [52.374, 4.89]
@@ -50,9 +80,15 @@ export default function TrackingMap({ history, currentPosition, checkins, onMapC
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
-      {history.map(pt => (
-        <CircleMarker key={pt.id} center={[pt.coords.lat, pt.coords.lng]} radius={3}
-          pathOptions={{ color: '#38bdf8', fillColor: '#38bdf8', fillOpacity: 0.35, weight: 0 }} />
+      {spots.map(spot => (
+        <Circle
+          key={spot.id}
+          center={[spot.coords.lat, spot.coords.lng]}
+          radius={SPOT_RADIUS_METRES}
+          pathOptions={{ color: '#4ade80', fillColor: '#4ade80', fillOpacity: 0.6, weight: 1.5 }}
+        >
+          <Popup><SpotPopup spot={spot} /></Popup>
+        </Circle>
       ))}
       {checkins.map(c => (
         <Marker key={c.id} position={[c.venue.location.lat, c.venue.location.lng]} icon={swarmIcon}>
@@ -65,8 +101,11 @@ export default function TrackingMap({ history, currentPosition, checkins, onMapC
       ))}
       {currentPosition && (
         <>
-          <CircleMarker center={[currentPosition.coords.lat, currentPosition.coords.lng]} radius={10}
-            pathOptions={{ color: '#38bdf8', fillColor: '#0ea5e9', fillOpacity: 1, weight: 3 }} />
+          <Circle
+            center={[currentPosition.coords.lat, currentPosition.coords.lng]}
+            radius={Math.max(currentPosition.accuracy, 3)}
+            pathOptions={{ color: '#38bdf8', fillColor: '#0ea5e9', fillOpacity: 0.9, weight: 2 }}
+          />
           <RecenterControl position={currentPosition.coords} />
         </>
       )}

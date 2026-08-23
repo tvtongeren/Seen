@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { Loader2, Link2, Link2Off, RefreshCw, Star, User, Copy, Check, ExternalLink, KeyRound, Upload, Info } from 'lucide-react'
 import type { SwarmCheckin } from '@/types'
-import { getClientId, setClientId, getPlacesApiKey, setPlacesApiKey, getRedirectUri } from '@/services/config'
+import { getClientId, setClientId, getRedirectUri } from '@/services/config'
 import { format } from 'date-fns'
 
 interface Props {
@@ -42,12 +42,10 @@ function CopyField({ value }: { value: string }) {
 
 function SetupPanel({ onConfigured }: { onConfigured: () => void }) {
   const [clientId, setClientIdInput] = useState(getClientId())
-  const [apiKey, setApiKeyInput] = useState(getPlacesApiKey())
   const [saved, setSaved] = useState(false)
 
   function save() {
     setClientId(clientId)
-    setPlacesApiKey(apiKey)
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
     onConfigured()
@@ -100,16 +98,6 @@ function SetupPanel({ onConfigured }: { onConfigured: () => void }) {
               placeholder="ABCDEF123456…"
               className="mt-1 w-full bg-slate-900 text-white placeholder-slate-600 rounded-lg px-3 py-2 text-sm font-mono border border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
-          </label>
-
-          <label className="block">
-            <span className="text-xs text-slate-400 font-medium">Places API key <span className="text-slate-600">(optional)</span></span>
-            <input
-              type="text" value={apiKey} onChange={e => setApiKeyInput(e.target.value)}
-              placeholder="fsq3…"
-              className="mt-1 w-full bg-slate-900 text-white placeholder-slate-600 rounded-lg px-3 py-2 text-sm font-mono border border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-            />
-            <span className="text-[11px] text-slate-600 mt-1 block">Enables place search on the Check tab.</span>
           </label>
 
           <button

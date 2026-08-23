@@ -14,7 +14,6 @@
  */
 
 const CLIENT_ID_KEY = 'seen_fsq_client_id'
-const API_KEY_KEY = 'seen_fsq_api_key'
 
 /** Foursquare OAuth Client ID (public value, safe in a browser). */
 export function getClientId(): string {
@@ -25,17 +24,6 @@ export function setClientId(id: string): void {
   const trimmed = id.trim()
   if (trimmed) localStorage.setItem(CLIENT_ID_KEY, trimmed)
   else localStorage.removeItem(CLIENT_ID_KEY)
-}
-
-/** Foursquare Places API key — used only for place search on the Check tab. */
-export function getPlacesApiKey(): string {
-  return localStorage.getItem(API_KEY_KEY) || (import.meta.env.VITE_FOURSQUARE_API_KEY ?? '')
-}
-
-export function setPlacesApiKey(key: string): void {
-  const trimmed = key.trim()
-  if (trimmed) localStorage.setItem(API_KEY_KEY, trimmed)
-  else localStorage.removeItem(API_KEY_KEY)
 }
 
 export function hasClientId(): boolean {

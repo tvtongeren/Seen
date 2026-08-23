@@ -33,7 +33,7 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
 
   const {
-    currentPosition, history, pointCount, tracking,
+    currentPosition, history, spots, pointCount, tracking,
     start: startTracking, stop: stopTracking, snapCurrentPosition,
   } = useLocationTracking()
 
@@ -51,8 +51,8 @@ export default function App() {
   const pages: Record<Tab, React.ReactNode> = {
     map: (
       <MapPage
-        history={history} currentPosition={currentPosition} checkins={swarm.checkins}
-        tracking={tracking} pointCount={pointCount}
+        spots={spots} currentPosition={currentPosition} checkins={swarm.checkins}
+        tracking={tracking}
         onStartTracking={() => startTracking(settings.trackingIntervalSeconds)}
         onStopTracking={stopTracking} onSnapPosition={snapCurrentPosition}
       />

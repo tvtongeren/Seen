@@ -3,7 +3,7 @@ import { Search, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import { checkProximity, formatDistance } from '@/services/locationService'
-import { searchPlaces, type FSQPlace } from '@/services/swarmService'
+import { searchPlacesFree, type SearchPlace } from '@/services/geocodeService'
 import type { ProximityResult, LocationPoint } from '@/types'
 import { format, formatDistanceToNow } from 'date-fns'
 
@@ -26,8 +26,9 @@ interface Props { currentPosition: LocationPoint | null }
 export default function ProximityCheckPage({ currentPosition }: Props) {
   const [mode, setMode] = useState<CheckMode>('search')
   const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<FSQPlace[]>([])
+  const [searchResults, setSearchResults] = useState<SearchPlace[]>([])
   const [searching, setSearching] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
   const [pinnedCoords, setPinnedCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [result, setResult] = useState<ProximityResult | null>(null)
   const [checking, setChecking] = useState(false)
@@ -39,13 +40,21 @@ export default function ProximityCheckPage({ currentPosition }: Props) {
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return
     setSearching(true)
-    try { setSearchResults(await searchPlaces(query, currentPosition?.coords ?? { lat: 52.374, lng: 4.89 })) }
-    finally { setSearching(false) }
+    setSearchError(null)
+    try {
+      const results = await searchPlacesFree(query, currentPosition?.coords ?? { lat: 52.374, lng: 4.89 })
+      setSearchResults(results)
+      if (results.length === 0) setSearchError(`No places found for "${query.trim()}". Try a different search, or drop a pin instead.`)
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setSearching(false)
+    }
   }, [query, currentPosition])
 
-  const handleCheckFSQ = useCallback(async (place: FSQPlace) => {
+  const handleCheckPlace = useCallback(async (place: SearchPlace) => {
     setChecking(true)
-    setResult(await checkProximity({ lat: place.geocodes.main.latitude, lng: place.geocodes.main.longitude }, place.name))
+    setResult(await checkProximity(place.coords, place.name))
     setSearchResults([])
     setChecking(false)
   }, [])
@@ -87,12 +96,17 @@ export default function ProximityCheckPage({ currentPosition }: Props) {
               {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
             </button>
           </div>
+          {searchError && (
+            <div className="bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs rounded-xl px-4 py-3 leading-relaxed">
+              {searchError}
+            </div>
+          )}
           {searchResults.length > 0 && (
             <div className="bg-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-700">
               {searchResults.map(p => (
-                <button key={p.fsq_id} onClick={() => handleCheckFSQ(p)} className="w-full text-left px-4 py-3 hover:bg-slate-700 transition-colors">
+                <button key={p.id} onClick={() => handleCheckPlace(p)} className="w-full text-left px-4 py-3 hover:bg-slate-700 transition-colors">
                   <div className="font-medium text-sm">{p.name}</div>
-                  <div className="text-xs text-slate-400 mt-0.5">{p.categories[0]?.name} · {p.location.formatted_address}</div>
+                  <div className="text-xs text-slate-400 mt-0.5 truncate">{p.category} · {p.address}</div>
                 </button>
               ))}
             </div>
@@ -182,7 +196,7 @@ export default function ProximityCheckPage({ currentPosition }: Props) {
             </div>
           )}
 
-          <button onClick={() => { setResult(null); setQuery(''); setPinnedCoords(null) }}
+          <button onClick={() => { setResult(null); setQuery(''); setPinnedCoords(null); setSearchError(null) }}
             className="w-full py-3 rounded-xl border border-slate-700 text-slate-400 text-sm font-medium hover:border-slate-500 transition-colors">
             Check another place
           </button>

@@ -9,7 +9,7 @@
  */
 import type { SwarmCheckin, SwarmAuthState, Place } from '@/types'
 import { saveCheckins, getCheckins, savePlace } from './db'
-import { getClientId, getPlacesApiKey, getRedirectUri } from './config'
+import { getClientId, getRedirectUri } from './config'
 
 const AUTH_URL = 'https://foursquare.com/oauth2/authenticate'
 const API_BASE = 'https://api.foursquare.com/v2'
@@ -194,35 +194,4 @@ async function convertCheckinsToPlaces(checkins: SwarmCheckin[]): Promise<void> 
   }
 
   await Promise.all([...venueMap.values()].map(savePlace))
-}
-
-// ─── Place search (Places API v3) ─────────────────────────────────────────────
-
-export interface FSQPlace {
-  fsq_id: string
-  name: string
-  geocodes: { main: { latitude: number; longitude: number } }
-  location: { formatted_address: string }
-  categories: Array<{ name: string }>
-}
-
-export async function searchPlaces(
-  query: string,
-  near: { lat: number; lng: number }
-): Promise<FSQPlace[]> {
-  const apiKey = getPlacesApiKey()
-  if (!apiKey) return []
-
-  const params = new URLSearchParams({
-    query,
-    ll: `${near.lat},${near.lng}`,
-    limit: '10',
-    fields: 'fsq_id,name,geocodes,location,categories',
-  })
-
-  const res = await fetch(`https://api.foursquare.com/v3/places/search?${params}`, {
-    headers: { Authorization: apiKey },
-  })
-  if (!res.ok) return []
-  return (await res.json()).results ?? []
 }

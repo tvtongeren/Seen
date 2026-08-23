@@ -1,14 +1,15 @@
 import { openDB, type IDBPDatabase } from 'idb'
-import type { LocationPoint, Place, SwarmCheckin, AppSettings } from '@/types'
+import type { LocationPoint, Place, SwarmCheckin, AppSettings, Spot } from '@/types'
 
 const DB_NAME = 'seen-db'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 export type SeenDB = {
   locations: { key: string; value: LocationPoint; indexes: { byTimestamp: number } }
   places: { key: string; value: Place; indexes: { byLastSeen: number } }
   checkins: { key: string; value: SwarmCheckin; indexes: { byCreatedAt: number } }
   settings: { key: string; value: AppSettings }
+  spots: { key: string; value: Spot; indexes: { byLastSeen: number } }
 }
 
 let _db: IDBPDatabase<SeenDB> | null = null
@@ -16,11 +17,16 @@ let _db: IDBPDatabase<SeenDB> | null = null
 export async function getDB(): Promise<IDBPDatabase<SeenDB>> {
   if (_db) return _db
   _db = await openDB<SeenDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      db.createObjectStore('locations', { keyPath: 'id' }).createIndex('byTimestamp', 'timestamp')
-      db.createObjectStore('places', { keyPath: 'id' }).createIndex('byLastSeen', 'lastSeen')
-      db.createObjectStore('checkins', { keyPath: 'id' }).createIndex('byCreatedAt', 'createdAt')
-      db.createObjectStore('settings')
+    upgrade(db, oldVersion) {
+      if (oldVersion < 1) {
+        db.createObjectStore('locations', { keyPath: 'id' }).createIndex('byTimestamp', 'timestamp')
+        db.createObjectStore('places', { keyPath: 'id' }).createIndex('byLastSeen', 'lastSeen')
+        db.createObjectStore('checkins', { keyPath: 'id' }).createIndex('byCreatedAt', 'createdAt')
+        db.createObjectStore('settings')
+      }
+      if (oldVersion < 2) {
+        db.createObjectStore('spots', { keyPath: 'id' }).createIndex('byLastSeen', 'lastSeen')
+      }
     },
   })
   return _db
@@ -62,6 +68,18 @@ export async function saveCheckins(checkins: SwarmCheckin[]): Promise<void> {
 
 export async function getCheckins(): Promise<SwarmCheckin[]> {
   return (await getDB()).getAllFromIndex('checkins', 'byCreatedAt')
+}
+
+export async function getSpots(): Promise<Spot[]> {
+  return (await getDB()).getAll('spots')
+}
+
+export async function saveSpot(spot: Spot): Promise<void> {
+  await (await getDB()).put('spots', spot)
+}
+
+export async function clearSpots(): Promise<void> {
+  await (await getDB()).clear('spots')
 }
 
 const SETTINGS_KEY = 'app'

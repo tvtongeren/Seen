@@ -1,35 +1,34 @@
 import { useState } from 'react'
 import { Navigation, Pause, Play, MapPin } from 'lucide-react'
 import TrackingMap from './TrackingMap'
-import type { LocationPoint, SwarmCheckin } from '@/types'
+import type { LocationPoint, SwarmCheckin, Spot } from '@/types'
 import { formatDistance } from '@/services/locationService'
 import { format } from 'date-fns'
 
 interface Props {
-  history: LocationPoint[]
+  spots: Spot[]
   currentPosition: LocationPoint | null
   checkins: SwarmCheckin[]
   tracking: boolean
-  pointCount: number
   onStartTracking: () => void
   onStopTracking: () => void
   onSnapPosition: () => void
 }
 
-export default function MapPage({ history, currentPosition, checkins, tracking, pointCount, onStartTracking, onStopTracking, onSnapPosition }: Props) {
+export default function MapPage({ spots, currentPosition, checkins, tracking, onStartTracking, onStopTracking, onSnapPosition }: Props) {
   const [showInfo, setShowInfo] = useState(false)
 
   return (
     <div className="relative w-full h-full bg-slate-900">
       <div className="absolute inset-0">
-        <TrackingMap history={history} currentPosition={currentPosition} checkins={checkins} />
+        <TrackingMap spots={spots} currentPosition={currentPosition} checkins={checkins} />
       </div>
 
       <div className="absolute top-0 left-0 right-0 z-[1000] p-4 flex items-start gap-3">
         <div className="flex-1 bg-slate-900/80 backdrop-blur rounded-2xl px-4 py-2 text-white">
           <div className="text-xs text-slate-400 uppercase tracking-wider">Seen</div>
           <div className="text-sm font-semibold">
-            {pointCount.toLocaleString()} points{checkins.length > 0 && ` · ${checkins.length} check-ins`}
+            {spots.length.toLocaleString()} places{checkins.length > 0 && ` · ${checkins.length} check-ins`}
           </div>
         </div>
         <button onClick={onSnapPosition} className="bg-slate-900/80 backdrop-blur rounded-2xl p-3 text-brand-400 hover:text-brand-300 transition-colors" aria-label="Locate me">
