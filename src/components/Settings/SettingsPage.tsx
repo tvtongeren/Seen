@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { Shield, Trash2, Bell, MapPin } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { Shield, Trash2, Bell, MapPin, Download, Upload, Loader2 } from 'lucide-react'
 import type { AppSettings, SwarmCheckin } from '@/types'
 import { saveSettings, clearLocations } from '@/services/db'
+import { downloadBackup, restoreBackup } from '@/services/backup'
 import SwarmSection from './SwarmSection'
 
 interface SwarmProps {
@@ -24,7 +25,9 @@ interface SwarmProps {
 interface Props {
   settings: AppSettings
   pointCount: number
+  spotCount: number
   onSettingsChange: (s: AppSettings) => void
+  onDataRestored: () => void
   swarm: SwarmProps
 }
 
@@ -50,9 +53,16 @@ function Row({ icon: Icon, label, description, children }: { icon: React.Element
   )
 }
 
-export default function SettingsPage({ settings, pointCount, onSettingsChange, swarm }: Props) {
+export default function SettingsPage({
+  settings, pointCount, spotCount, onSettingsChange, onDataRestored, swarm,
+}: Props) {
   const [clearing, setClearing] = useState(false)
   const [cleared, setCleared] = useState(false)
+  const [backingUp, setBackingUp] = useState(false)
+  const [restoring, setRestoring] = useState(false)
+  const [backupNotice, setBackupNotice] = useState<string | null>(null)
+  const [backupError, setBackupError] = useState<string | null>(null)
+  const restoreInputRef = useRef<HTMLInputElement>(null)
 
   async function update(patch: Partial<AppSettings>) {
     const next = { ...settings, ...patch }
@@ -62,6 +72,41 @@ export default function SettingsPage({ settings, pointCount, onSettingsChange, s
   async function handleClear() {
     if (!window.confirm(`Delete all ${pointCount.toLocaleString()} location points? This cannot be undone.`)) return
     setClearing(true); await clearLocations(); setClearing(false); setCleared(true)
+    onDataRestored()
+  }
+
+  async function handleBackup() {
+    setBackingUp(true); setBackupError(null); setBackupNotice(null)
+    try {
+      const backup = await downloadBackup()
+      setBackupNotice(
+        `Backed up ${backup.counts.spots.toLocaleString()} places and ` +
+        `${backup.counts.locations.toLocaleString()} points.`
+      )
+    } catch (err) {
+      setBackupError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setBackingUp(false)
+    }
+  }
+
+  async function handleRestore(file: File) {
+    setRestoring(true); setBackupError(null); setBackupNotice(null)
+    try {
+      const r = await restoreBackup(file)
+      const parts = [
+        r.spotsAdded > 0 ? `${r.spotsAdded.toLocaleString()} places restored` : null,
+        r.spotsMerged > 0 ? `${r.spotsMerged.toLocaleString()} already present` : null,
+        r.locationsAdded > 0 ? `${r.locationsAdded.toLocaleString()} points` : null,
+        r.checkinsAdded > 0 ? `${r.checkinsAdded.toLocaleString()} check-ins` : null,
+      ].filter(Boolean)
+      setBackupNotice(parts.length ? parts.join(' · ') : 'Nothing new — everything in that backup was already here.')
+      onDataRestored()
+    } catch (err) {
+      setBackupError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setRestoring(false)
+    }
   }
 
   return (
@@ -82,6 +127,61 @@ export default function SettingsPage({ settings, pointCount, onSettingsChange, s
       </div>
 
       <SwarmSection {...swarm} />
+
+      <div className="px-5 mt-5">
+        <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-1">Backup</div>
+        <div className="bg-slate-800 rounded-2xl overflow-hidden">
+          <div className="px-4 pt-4">
+            <p className="text-xs text-slate-400 leading-relaxed">
+              Your history lives only in this browser's storage, so clearing website data,
+              switching phones, or iOS reclaiming space would take it with it. Save a backup
+              file somewhere safe — it's the only copy that survives that.
+            </p>
+          </div>
+
+          <div className="px-4 py-4 space-y-2">
+            <button
+              onClick={handleBackup} disabled={backingUp || restoring}
+              className="w-full flex items-center justify-center gap-2 bg-brand-500 text-white py-3 rounded-xl text-sm font-semibold hover:bg-brand-600 disabled:opacity-60 transition-colors"
+            >
+              {backingUp ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              {backingUp ? 'Preparing…' : `Save backup (${spotCount.toLocaleString()} places)`}
+            </button>
+
+            <input
+              ref={restoreInputRef} type="file" accept=".json,application/json" className="hidden"
+              onChange={e => {
+                const file = e.target.files?.[0]
+                if (file) handleRestore(file)
+                e.target.value = ''
+              }}
+            />
+            <button
+              onClick={() => restoreInputRef.current?.click()} disabled={backingUp || restoring}
+              className="w-full flex items-center justify-center gap-2 bg-slate-700 border border-slate-600 text-white py-3 rounded-xl text-sm font-medium hover:bg-slate-600 disabled:opacity-60 transition-colors"
+            >
+              {restoring ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+              {restoring ? 'Restoring…' : 'Restore from backup'}
+            </button>
+
+            {backupNotice && (
+              <div className="bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-xs rounded-xl px-3 py-2.5 leading-relaxed">
+                {backupNotice}
+              </div>
+            )}
+            {backupError && (
+              <div className="bg-red-950/60 border border-red-800 text-red-300 text-xs rounded-xl px-3 py-2.5 leading-relaxed">
+                {backupError}
+              </div>
+            )}
+
+            <p className="text-[11px] text-slate-600 leading-relaxed pt-1">
+              Restoring merges into what's already here — it adds places you're missing and
+              never removes ones you have.
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="px-5 mt-5">
         <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-1">Privacy & Data</div>

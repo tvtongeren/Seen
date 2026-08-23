@@ -43,6 +43,14 @@ export function useLocationTracking() {
 
   const stop = useCallback(() => { stopTracking(); setTracking(false) }, [])
 
+  /** Re-reads stored data — used after a backup restore so the map reflects it immediately. */
+  const reloadFromStorage = useCallback(async () => {
+    const [pts, loadedSpots] = await Promise.all([getLocations(2000), getSpots()])
+    setHistory(pts)
+    setPointCount(pts.length)
+    setSpots(loadedSpots)
+  }, [])
+
   const snapCurrentPosition = useCallback(async () => {
     try {
       const point = await getCurrentPosition()
@@ -58,5 +66,8 @@ export function useLocationTracking() {
     if (settings?.trackingEnabled && !isTracking()) start(settings.trackingIntervalSeconds)
   }, [settings, start])
 
-  return { currentPosition, history, spots, pointCount, tracking, error, settings, start, stop, snapCurrentPosition }
+  return {
+    currentPosition, history, spots, pointCount, tracking, error, settings,
+    start, stop, snapCurrentPosition, reloadFromStorage,
+  }
 }

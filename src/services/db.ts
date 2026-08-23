@@ -43,8 +43,20 @@ export async function getLocations(limit = 5000): Promise<LocationPoint[]> {
   return all.slice(-limit)
 }
 
+/** Every stored point, unbounded — for backup export, where truncating would lose data. */
+export async function getAllLocations(): Promise<LocationPoint[]> {
+  return (await getDB()).getAllFromIndex('locations', 'byTimestamp')
+}
+
 export async function getLocationCount(): Promise<number> {
   return (await getDB()).count('locations')
+}
+
+export async function saveLocations(points: LocationPoint[]): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction('locations', 'readwrite')
+  await Promise.all(points.map(p => tx.store.put(p)))
+  await tx.done
 }
 
 export async function clearLocations(): Promise<void> {
@@ -57,6 +69,13 @@ export async function savePlace(place: Place): Promise<void> {
 
 export async function getPlaces(): Promise<Place[]> {
   return (await getDB()).getAllFromIndex('places', 'byLastSeen')
+}
+
+export async function savePlaces(places: Place[]): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction('places', 'readwrite')
+  await Promise.all(places.map(p => tx.store.put(p)))
+  await tx.done
 }
 
 export async function saveCheckins(checkins: SwarmCheckin[]): Promise<void> {
@@ -76,6 +95,22 @@ export async function getSpots(): Promise<Spot[]> {
 
 export async function saveSpot(spot: Spot): Promise<void> {
   await (await getDB()).put('spots', spot)
+}
+
+export async function saveSpots(spots: Spot[]): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction('spots', 'readwrite')
+  await Promise.all(spots.map(s => tx.store.put(s)))
+  await tx.done
+}
+
+/** Replaces the whole spots store in one transaction — used when restoring a merged set. */
+export async function replaceSpots(spots: Spot[]): Promise<void> {
+  const db = await getDB()
+  const tx = db.transaction('spots', 'readwrite')
+  await tx.store.clear()
+  await Promise.all(spots.map(s => tx.store.put(s)))
+  await tx.done
 }
 
 export async function clearSpots(): Promise<void> {

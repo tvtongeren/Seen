@@ -29,7 +29,7 @@ export default function App() {
 
   const {
     currentPosition, spots, pointCount, tracking,
-    start: startTracking, stop: stopTracking, snapCurrentPosition,
+    start: startTracking, stop: stopTracking, snapCurrentPosition, reloadFromStorage,
   } = useLocationTracking()
 
   const swarm = useSwarm()
@@ -55,7 +55,8 @@ export default function App() {
 
       {settingsOpen && (
         <SettingsOverlay
-          settings={settings} pointCount={pointCount} onSettingsChange={handleSettingsChange}
+          settings={settings} pointCount={pointCount} spotCount={spots.length}
+          onSettingsChange={handleSettingsChange} onDataRestored={reloadFromStorage}
           swarm={{
             isConnected: swarm.isConnected, user: swarm.auth.user, checkins: swarm.checkins,
             syncing: swarm.syncing, syncProgress: swarm.syncProgress, error: swarm.error,
