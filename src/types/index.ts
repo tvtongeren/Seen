@@ -40,16 +40,6 @@ export interface Spot {
   sampleDates: number[]
 }
 
-export interface ProximityResult {
-  place: Place | { name: string; coords: Coordinates }
-  closestPoint: LocationPoint | null
-  closestDistanceMetres: number
-  hasBeenWithin50m: boolean
-  hasBeenWithin200m: boolean
-  hasBeenWithin1km: boolean
-  visitDates: number[]
-}
-
 export interface SwarmCheckin {
   id: string
   createdAt: number

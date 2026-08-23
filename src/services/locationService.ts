@@ -1,5 +1,5 @@
-import { saveLocation, getLocations } from './db'
-import type { Coordinates, LocationPoint, ProximityResult } from '@/types'
+import { saveLocation } from './db'
+import type { Coordinates, LocationPoint } from '@/types'
 
 export function haversineMetres(a: Coordinates, b: Coordinates): number {
   const R = 6_371_000
@@ -66,34 +66,4 @@ export function getCurrentPosition(): Promise<LocationPoint> {
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 5_000 }
     )
   })
-}
-
-export async function checkProximity(
-  target: Coordinates,
-  targetName: string
-): Promise<ProximityResult> {
-  const history = await getLocations()
-  let closestPoint: LocationPoint | null = null
-  let closestDistance = Infinity
-  const visitDates: number[] = []
-
-  for (const point of history) {
-    const dist = haversineMetres(point.coords, target)
-    if (dist < closestDistance) { closestDistance = dist; closestPoint = point }
-    if (dist <= 100) visitDates.push(point.timestamp)
-  }
-
-  const uniqueDays = [
-    ...new Set(visitDates.map(ts => new Date(ts).toDateString())),
-  ].map(d => new Date(d).getTime())
-
-  return {
-    place: { name: targetName, coords: target },
-    closestPoint,
-    closestDistanceMetres: closestDistance === Infinity ? -1 : closestDistance,
-    hasBeenWithin50m: closestDistance <= 50,
-    hasBeenWithin200m: closestDistance <= 200,
-    hasBeenWithin1km: closestDistance <= 1000,
-    visitDates: uniqueDays,
-  }
 }

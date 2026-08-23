@@ -58,7 +58,7 @@ export default function App() {
       />
     ),
     history: <HistoryPage history={history} checkins={swarm.checkins} adsEnabled={settings.adsEnabled} />,
-    check: <ProximityCheckPage currentPosition={currentPosition} />,
+    check: <ProximityCheckPage currentPosition={currentPosition} spots={spots} />,
     swarm: (
       <SwarmPage
         isConnected={swarm.isConnected} user={swarm.auth.user} checkins={swarm.checkins}

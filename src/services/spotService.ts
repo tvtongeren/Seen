@@ -10,10 +10,12 @@
  */
 import { haversineMetres } from './locationService'
 import { getSpots, saveSpot, getLocations } from './db'
-import type { LocationPoint, Spot } from '@/types'
+import type { Coordinates, LocationPoint, Spot } from '@/types'
 
 export const SPOT_RADIUS_METRES = 10
 export const MAX_SAMPLE_DATES = 10
+/** Beyond this, a search result isn't "close" to anywhere you've been. */
+const NEARBY_THRESHOLD_METRES = 200
 
 function startOfDay(ts: number): number {
   const d = new Date(ts)
@@ -108,4 +110,46 @@ export async function backfillSpotsFromHistory(): Promise<number> {
 
   await Promise.all(spots.map(saveSpot))
   return spots.length
+}
+
+// ─── Proximity lookup ─────────────────────────────────────────────────────────
+
+export interface SpotProximityResult {
+  targetName: string
+  targetCoords: Coordinates
+  nearestSpot: Spot | null
+  distanceMetres: number
+  /** Within the spot's own catchment radius — this is the same place. */
+  hasBeenHere: boolean
+  /** Not the same spot, but close enough to be worth mentioning. */
+  hasBeenNearby: boolean
+}
+
+/**
+ * Answers "have I been here?" directly against the spots already on the map,
+ * rather than rescanning raw GPS history — the dots ARE the record, so this
+ * keeps the search result consistent with what's actually drawn. Pure and
+ * synchronous: spots are passed in from state already loaded in memory.
+ */
+export function checkProximityAgainstSpots(
+  target: Coordinates,
+  targetName: string,
+  spots: Spot[]
+): SpotProximityResult {
+  let nearest: Spot | null = null
+  let nearestDist = Infinity
+
+  for (const spot of spots) {
+    const d = haversineMetres(spot.coords, target)
+    if (d < nearestDist) { nearestDist = d; nearest = spot }
+  }
+
+  return {
+    targetName,
+    targetCoords: target,
+    nearestSpot: nearest,
+    distanceMetres: nearest ? nearestDist : -1,
+    hasBeenHere: nearest !== null && nearestDist <= SPOT_RADIUS_METRES,
+    hasBeenNearby: nearest !== null && nearestDist <= NEARBY_THRESHOLD_METRES,
+  }
 }
