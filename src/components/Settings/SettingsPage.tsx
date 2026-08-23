@@ -1,9 +1,32 @@
 import { useState } from 'react'
 import { Shield, Trash2, Bell, MapPin, BarChart3 } from 'lucide-react'
-import type { AppSettings } from '@/types'
+import type { AppSettings, SwarmCheckin } from '@/types'
 import { saveSettings, clearLocations } from '@/services/db'
+import SwarmSection from './SwarmSection'
 
-interface Props { settings: AppSettings; pointCount: number; onSettingsChange: (s: AppSettings) => void }
+interface SwarmProps {
+  isConnected: boolean
+  user: { firstName: string; lastName: string; photo?: string } | null
+  checkins: SwarmCheckin[]
+  syncing: boolean
+  syncProgress: number
+  error: string | null
+  configured: boolean
+  importing: boolean
+  importNotice: string | null
+  onConnect: () => void
+  onDisconnect: () => void
+  onSync: () => void
+  onConfigured: () => void
+  onImportFile: (file: File) => void
+}
+
+interface Props {
+  settings: AppSettings
+  pointCount: number
+  onSettingsChange: (s: AppSettings) => void
+  swarm: SwarmProps
+}
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -27,7 +50,7 @@ function Row({ icon: Icon, label, description, children }: { icon: React.Element
   )
 }
 
-export default function SettingsPage({ settings, pointCount, onSettingsChange }: Props) {
+export default function SettingsPage({ settings, pointCount, onSettingsChange, swarm }: Props) {
   const [clearing, setClearing] = useState(false)
   const [cleared, setCleared] = useState(false)
 
@@ -59,6 +82,8 @@ export default function SettingsPage({ settings, pointCount, onSettingsChange }:
           </Row>
         </div>
       </div>
+
+      <SwarmSection {...swarm} />
 
       <div className="px-5 mt-5">
         <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-1">Ads</div>

@@ -1,10 +1,9 @@
-import { Map, Clock, Star, Settings } from 'lucide-react'
+import { Map, Clock, Settings } from 'lucide-react'
 import type { Tab } from '@/types'
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'map', label: 'Map', icon: Map },
   { id: 'history', label: 'History', icon: Clock },
-  { id: 'swarm', label: 'Swarm', icon: Star },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 

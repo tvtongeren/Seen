@@ -5,7 +5,6 @@ import { getSettings, saveSettings } from './services/db'
 import BottomNav from './components/Navigation/BottomNav'
 import MapPage from './components/Map/MapPage'
 import HistoryPage from './components/History/HistoryPage'
-import SwarmPage from './components/Swarm/SwarmPage'
 import SettingsPage from './components/Settings/SettingsPage'
 import type { Tab, AppSettings } from './types'
 
@@ -20,11 +19,11 @@ const DEFAULT_SETTINGS: AppSettings = {
 /**
  * Detect an OAuth redirect synchronously during the first render, before
  * useSwarm's effect scrubs the token out of the URL — so we can land the
- * user back on the Swarm tab.
+ * user back on Settings, where the Swarm section now lives.
  */
 function initialTab(): Tab {
   const hash = window.location.hash
-  return hash.includes('access_token') || hash.includes('error') ? 'swarm' : 'map'
+  return hash.includes('access_token') || hash.includes('error') ? 'settings' : 'map'
 }
 
 export default function App() {
@@ -57,17 +56,18 @@ export default function App() {
       />
     ),
     history: <HistoryPage history={history} checkins={swarm.checkins} adsEnabled={settings.adsEnabled} />,
-    swarm: (
-      <SwarmPage
-        isConnected={swarm.isConnected} user={swarm.auth.user} checkins={swarm.checkins}
-        syncing={swarm.syncing} syncProgress={swarm.syncProgress} error={swarm.error}
-        configured={swarm.configured} importing={swarm.importing}
-        importNotice={swarm.importNotice} onConnect={swarm.connect}
-        onDisconnect={swarm.disconnect} onSync={swarm.sync}
-        onConfigured={swarm.refreshConfigured} onImportFile={swarm.importFile}
+    settings: (
+      <SettingsPage
+        settings={settings} pointCount={pointCount} onSettingsChange={handleSettingsChange}
+        swarm={{
+          isConnected: swarm.isConnected, user: swarm.auth.user, checkins: swarm.checkins,
+          syncing: swarm.syncing, syncProgress: swarm.syncProgress, error: swarm.error,
+          configured: swarm.configured, importing: swarm.importing, importNotice: swarm.importNotice,
+          onConnect: swarm.connect, onDisconnect: swarm.disconnect, onSync: swarm.sync,
+          onConfigured: swarm.refreshConfigured, onImportFile: swarm.importFile,
+        }}
       />
     ),
-    settings: <SettingsPage settings={settings} pointCount={pointCount} onSettingsChange={handleSettingsChange} />,
   }
 
   return (

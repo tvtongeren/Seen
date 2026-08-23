@@ -183,7 +183,7 @@ function ImportPanel({ importing, onImportFile }: { importing: boolean; onImport
   )
 }
 
-export default function SwarmPage({
+export default function SwarmSection({
   isConnected, user, checkins, syncing, syncProgress, error,
   configured, importing, importNotice,
   onConnect, onDisconnect, onSync, onConfigured, onImportFile,
@@ -193,153 +193,142 @@ export default function SwarmPage({
   const sorted = [...checkins].reverse()
 
   return (
-    <div className="flex flex-col h-full bg-slate-900 text-white overflow-y-auto">
-      <div className="px-5 pt-6 pb-4">
-        <h1 className="text-2xl font-bold">Swarm</h1>
-        <p className="text-slate-400 text-sm mt-1">Import your check-in history into Seen.</p>
-      </div>
+    <div className="px-5 mt-5">
+      <div className="text-xs text-slate-500 uppercase tracking-wider mb-2 px-1">Swarm</div>
 
-      {/* Import is the primary path — it works without Foursquare's approval. */}
-      <div className="px-5">
+      <div className="space-y-3">
         <ImportPanel importing={importing} onImportFile={onImportFile} />
-      </div>
 
-      {importNotice && (
-        <div className="px-5 mt-3">
+        {importNotice && (
           <div className="bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-sm rounded-xl px-4 py-3">
             {importNotice}
           </div>
-        </div>
-      )}
-
-      {/* Live API is secondary: Foursquare often declines new apps access. */}
-      <div className="px-5 mt-4">
-        <button onClick={() => setShowApi(v => !v)}
-          className="w-full flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors py-2">
-          <Info size={13} />
-          <span>{showApi ? 'Hide' : 'Or connect the live API'}</span>
-        </button>
-
-        {showApi && (
-          <div className="space-y-3 mt-1">
-            <div className="bg-amber-950/40 border border-amber-800/60 rounded-xl px-4 py-3">
-              <p className="text-xs text-amber-200/90 leading-relaxed">
-                Swarm sign-in goes through <strong>foursquare.com</strong> — same company, one
-                login, so that redirect is expected. Be aware Foursquare restricts the personal
-                check-in endpoints, and new developer apps are often not approved for them. If
-                connecting fails, use the import above instead.
-              </p>
-            </div>
-            {!configured ? (
-              <SetupPanel onConfigured={onConfigured} />
-            ) : (
-              <>
-                <div className={`rounded-2xl p-5 border ${isConnected ? 'border-emerald-700 bg-emerald-950/40' : 'border-slate-700 bg-slate-800'}`}>
-                  {isConnected && user ? (
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        {user.photo
-                          ? <img src={user.photo} alt="" className="w-full h-full object-cover" />
-                          : <User size={24} />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">{user.firstName} {user.lastName}</div>
-                        <div className="text-sm text-emerald-400">Connected to Swarm</div>
-                      </div>
-                      <button onClick={onDisconnect} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 transition-colors flex-shrink-0">
-                        <Link2Off size={14} />Disconnect
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="text-center space-y-4">
-                      <div className="w-16 h-16 rounded-full bg-orange-500 mx-auto flex items-center justify-center">
-                        <Star size={28} className="text-white" />
-                      </div>
-                      <div>
-                        <div className="font-semibold">Ready to connect</div>
-                        <div className="text-sm text-slate-400 mt-1">
-                          You'll be sent to Foursquare to approve access, then straight back here.
-                        </div>
-                      </div>
-                      <button onClick={onConnect}
-                        className="flex items-center gap-2 mx-auto bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-orange-600 transition-colors">
-                        <Link2 size={16} />Connect with Swarm
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <button onClick={() => setShowSetup(v => !v)}
-                  className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                  {showSetup ? 'Hide credentials' : 'Edit credentials'}
-                </button>
-                {showSetup && <SetupPanel onConfigured={onConfigured} />}
-              </>
-            )}
-          </div>
         )}
-      </div>
 
-      {isConnected && (
-        <div className="px-5 mt-4">
+        <div>
+          <button onClick={() => setShowApi(v => !v)}
+            className="w-full flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors py-2">
+            <Info size={13} />
+            <span>{showApi ? 'Hide' : 'Or connect the live API'}</span>
+          </button>
+
+          {showApi && (
+            <div className="space-y-3 mt-1">
+              <div className="bg-amber-950/40 border border-amber-800/60 rounded-xl px-4 py-3">
+                <p className="text-xs text-amber-200/90 leading-relaxed">
+                  Swarm sign-in goes through <strong>foursquare.com</strong> — same company, one
+                  login, so that redirect is expected. Be aware Foursquare restricts the personal
+                  check-in endpoints, and new developer apps are often not approved for them. If
+                  connecting fails, use the import above instead.
+                </p>
+              </div>
+              {!configured ? (
+                <SetupPanel onConfigured={onConfigured} />
+              ) : (
+                <>
+                  <div className={`rounded-2xl p-5 border ${isConnected ? 'border-emerald-700 bg-emerald-950/40' : 'border-slate-700 bg-slate-800'}`}>
+                    {isConnected && user ? (
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {user.photo
+                            ? <img src={user.photo} alt="" className="w-full h-full object-cover" />
+                            : <User size={24} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold truncate">{user.firstName} {user.lastName}</div>
+                          <div className="text-sm text-emerald-400">Connected to Swarm</div>
+                        </div>
+                        <button onClick={onDisconnect} className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-red-400 transition-colors flex-shrink-0">
+                          <Link2Off size={14} />Disconnect
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="text-center space-y-4">
+                        <div className="w-16 h-16 rounded-full bg-orange-500 mx-auto flex items-center justify-center">
+                          <Star size={28} className="text-white" />
+                        </div>
+                        <div>
+                          <div className="font-semibold">Ready to connect</div>
+                          <div className="text-sm text-slate-400 mt-1">
+                            You'll be sent to Foursquare to approve access, then straight back here.
+                          </div>
+                        </div>
+                        <button onClick={onConnect}
+                          className="flex items-center gap-2 mx-auto bg-orange-500 text-white px-6 py-3 rounded-xl font-semibold text-sm hover:bg-orange-600 transition-colors">
+                          <Link2 size={16} />Connect with Swarm
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button onClick={() => setShowSetup(v => !v)}
+                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                    {showSetup ? 'Hide credentials' : 'Edit credentials'}
+                  </button>
+                  {showSetup && <SetupPanel onConfigured={onConfigured} />}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isConnected && (
           <button onClick={onSync} disabled={syncing}
             className="w-full flex items-center justify-center gap-2 bg-slate-800 border border-slate-700 text-white py-3 rounded-xl text-sm font-medium hover:bg-slate-700 disabled:opacity-60 transition-colors">
             {syncing ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
             {syncing ? `Syncing… (${syncProgress} check-ins)` : 'Sync check-ins'}
           </button>
-        </div>
-      )}
+        )}
 
-      {error && (
-        <div className="px-5 mt-3">
+        {error && (
           <div className="bg-red-950/60 border border-red-800 text-red-300 text-sm rounded-xl px-4 py-3 leading-relaxed">
             {error}
           </div>
-        </div>
-      )}
+        )}
 
-      {checkins.length > 0 && (
-        <div className="px-5 mt-5 grid grid-cols-3 gap-3">
-          {[
-            { label: 'Check-ins', value: checkins.length },
-            { label: 'Venues', value: new Set(checkins.map(c => c.venue.id)).size },
-            { label: 'Cities', value: new Set(checkins.map(c => c.venue.location.city).filter(Boolean)).size },
-          ].map(s => (
-            <div key={s.label} className="bg-slate-800 rounded-xl p-3 text-center">
-              <div className="text-xl font-bold text-brand-300">{s.value.toLocaleString()}</div>
-              <div className="text-xs text-slate-500 mt-0.5">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {sorted.length > 0 && (
-        <div className="px-5 mt-5 pb-6">
-          <div className="text-xs text-slate-400 uppercase tracking-wider mb-3">Recent check-ins</div>
-          <div className="bg-slate-800 rounded-2xl divide-y divide-slate-700/60 overflow-hidden">
-            {sorted.slice(0, 30).map(c => (
-              <div key={c.id} className="flex items-start gap-3 px-4 py-3">
-                <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <Star size={13} className="text-orange-400" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm truncate">{c.venue.name}</div>
-                  <div className="text-xs text-slate-400 truncate">
-                    {c.venue.categories?.[0]?.name}{c.venue.location.city ? ` · ${c.venue.location.city}` : ''}
-                  </div>
-                </div>
-                <div className="text-xs text-slate-600 flex-shrink-0 text-right">
-                  <div>{format(c.createdAt * 1000, 'dd MMM')}</div>
-                  <div>{format(c.createdAt * 1000, 'HH:mm')}</div>
-                </div>
+        {checkins.length > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Check-ins', value: checkins.length },
+              { label: 'Venues', value: new Set(checkins.map(c => c.venue.id)).size },
+              { label: 'Cities', value: new Set(checkins.map(c => c.venue.location.city).filter(Boolean)).size },
+            ].map(s => (
+              <div key={s.label} className="bg-slate-800 rounded-xl p-3 text-center">
+                <div className="text-xl font-bold text-brand-300">{s.value.toLocaleString()}</div>
+                <div className="text-xs text-slate-500 mt-0.5">{s.label}</div>
               </div>
             ))}
-            {sorted.length > 30 && (
-              <div className="text-center text-xs text-slate-500 py-3">+ {sorted.length - 30} more</div>
-            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {sorted.length > 0 && (
+          <div>
+            <div className="text-xs text-slate-400 uppercase tracking-wider mb-3">Recent check-ins</div>
+            <div className="bg-slate-800 rounded-2xl divide-y divide-slate-700/60 overflow-hidden">
+              {sorted.slice(0, 30).map(c => (
+                <div key={c.id} className="flex items-start gap-3 px-4 py-3">
+                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Star size={13} className="text-orange-400" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-sm truncate">{c.venue.name}</div>
+                    <div className="text-xs text-slate-400 truncate">
+                      {c.venue.categories?.[0]?.name}{c.venue.location.city ? ` · ${c.venue.location.city}` : ''}
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-600 flex-shrink-0 text-right">
+                    <div>{format(c.createdAt * 1000, 'dd MMM')}</div>
+                    <div>{format(c.createdAt * 1000, 'HH:mm')}</div>
+                  </div>
+                </div>
+              ))}
+              {sorted.length > 30 && (
+                <div className="text-center text-xs text-slate-500 py-3">+ {sorted.length - 30} more</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
