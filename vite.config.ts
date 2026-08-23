@@ -15,6 +15,16 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'favicon-32x32.png'],
+      workbox: {
+        // Without these, an already-installed app can sit on a stale
+        // cached version for a while after a new deploy — the new service
+        // worker installs but waits for every open tab/instance to fully
+        // close before it takes over. This makes it activate immediately
+        // and take control of the page on the very next load.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+      },
       manifest: {
         name: 'Seen – Location History',
         short_name: 'Seen',
