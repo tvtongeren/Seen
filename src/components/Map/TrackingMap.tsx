@@ -67,9 +67,13 @@ export default function TrackingMap({ spots, currentPosition, checkins, target =
   return (
     <MapContainer center={defaultCenter} zoom={14} className="w-full h-full" zoomControl={false}>
       <ClickHandler onClick={onMapClick} />
+      {/* Standard OSM tiles need no API key (CARTO's dark basemap now serves
+          "API Key Required" placeholders); the dark look comes from a CSS filter. */}
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        maxZoom={19}
+        className="dark-tiles"
       />
       {spots.map(spot => (
         <Circle

@@ -18,6 +18,9 @@
 
 @layer utilities {
   .leaflet-pane, .leaflet-control, .leaflet-top, .leaflet-bottom { z-index: 400 !important; }
+  /* Turns the light OSM tiles into a dark map that matches the app. */
+  .dark-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9); }
+  .leaflet-container { background: #0f172a; }
 }
 
 ::-webkit-scrollbar { width: 4px; }
