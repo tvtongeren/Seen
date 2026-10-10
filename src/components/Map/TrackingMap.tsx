@@ -32,7 +32,17 @@ function ClickHandler({ onClick }: { onClick?: (lat: number, lng: number) => voi
   return null
 }
 
-/** Keeps the map centred on the user while tracking — suppressed while a search target is active. */
+/** Reports when the user drags the map by hand, so the parent can stop following the live position. */
+function DragHandler({ onDrag }: { onDrag?: () => void }) {
+  useMapEvents({ dragstart: () => onDrag?.() })
+  return null
+}
+
+/**
+ * Keeps the map centred on the user — mounted only while following, so new
+ * position fixes never yank the map away from a place the user is exploring.
+ * Mounting it (e.g. via the locate button) re-centres immediately.
+ */
 function RecenterControl({ position }: { position: Coordinates }) {
   const map = useMap()
   useEffect(() => {
@@ -56,10 +66,14 @@ interface Props {
   checkins: SwarmCheckin[]
   /** A searched or tapped place — shows a pin and stops auto-following the live position. */
   target?: Coordinates | null
+  /** Whether the map should keep re-centring on each new position fix. */
+  following?: boolean
   onMapClick?: (lat: number, lng: number) => void
+  /** Called when the user drags the map, i.e. wants to look somewhere else. */
+  onUserPan?: () => void
 }
 
-export default function TrackingMap({ spots, currentPosition, checkins, target = null, onMapClick }: Props) {
+export default function TrackingMap({ spots, currentPosition, checkins, target = null, following = true, onMapClick, onUserPan }: Props) {
   const defaultCenter: [number, number] = currentPosition
     ? [currentPosition.coords.lat, currentPosition.coords.lng]
     : [52.374, 4.89]
@@ -67,6 +81,7 @@ export default function TrackingMap({ spots, currentPosition, checkins, target =
   return (
     <MapContainer center={defaultCenter} zoom={14} className="w-full h-full" zoomControl={false}>
       <ClickHandler onClick={onMapClick} />
+      <DragHandler onDrag={onUserPan} />
       {/* Standard OSM tiles need no API key (CARTO's dark basemap now serves
           "API Key Required" placeholders); the dark look comes from a CSS filter. */}
       <TileLayer
@@ -101,7 +116,7 @@ export default function TrackingMap({ spots, currentPosition, checkins, target =
             radius={Math.max(currentPosition.accuracy, 3)}
             pathOptions={{ color: '#38bdf8', fillColor: '#0ea5e9', fillOpacity: 0.9, weight: 2 }}
           />
-          {!target && <RecenterControl position={currentPosition.coords} />}
+          {following && !target && <RecenterControl position={currentPosition.coords} />}
         </>
       )}
       {target && <Marker position={[target.lat, target.lng]} icon={targetIcon} />}

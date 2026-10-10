@@ -34,6 +34,8 @@ export default function MapPage({
   const [searching, setSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const [target, setTarget] = useState<{ name: string; coords: Coordinates } | null>(null)
+  // Follow the live position like Google Maps does, until the user drags the map away.
+  const [following, setFollowing] = useState(true)
 
   const biasCoords = currentPosition?.coords ?? FALLBACK_CENTER
 
@@ -79,9 +81,10 @@ export default function MapPage({
     setSearchError(null)
   }, [])
 
-  // Locating yourself cancels any search focus and re-centres on your live position.
+  // Locating yourself cancels any search focus and resumes following your live position.
   const handleLocate = useCallback(() => {
     clearTarget()
+    setFollowing(true)
     onSnapPosition()
   }, [clearTarget, onSnapPosition])
 
@@ -93,7 +96,8 @@ export default function MapPage({
       <div className="absolute inset-0">
         <TrackingMap
           spots={spots} currentPosition={currentPosition} checkins={checkins}
-          target={target?.coords ?? null} onMapClick={handleMapClick}
+          target={target?.coords ?? null} following={following}
+          onMapClick={handleMapClick} onUserPan={() => setFollowing(false)}
         />
       </div>
 
